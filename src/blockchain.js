@@ -1,11 +1,41 @@
 const SHA256 = require('crypto-js/sha256')
+const EC = require("elliptic").ec;
+const ec = new EC("secp256k1");
 
 class Transaction {
-  constructor(toAddress, fromAddress, amount) {
-    this.toAddress = toAddress
+  constructor(fromAddress, toAddress, amount) {
     this.fromAddress = fromAddress
+    this.toAddress = toAddress
     this.amount = amount
   }
+
+  calculateHash(){
+    return SHA256(this.toAddress, this.fromAddress, this.amount).toString();
+  }
+
+  signTransaction(signingKey){
+    if (signingKey.getPublic('hex') !== this.fromAddress){
+      throw new Error("Your signing key does not match your wallet");
+    }
+
+    // Calculate hash of transaction and sign it with key
+    const hashTx = this.calculateHash();
+    const sig = signingKey.sign(hashTx, "base64");
+
+    this.signature = sig.toDER('hex');
+  }
+
+  isValid(){
+    if (this.fromAddress === null) return true
+
+    if (!this.signature || this.signature.length === 0){
+      throw new Error("No signature")
+    }
+
+    const publicKey = ec.keyFromPublic(this.fromAddress, 'hex');
+    return publicKey.verify(this.calculateHash(), this.signature);
+  }
+
 }
 
 class Block {
@@ -29,6 +59,16 @@ class Block {
 
       console.log("Block mined: " + this.hash)
     }
+
+    hasValidTransaction(){
+      for (const tx of this.transactions){
+        if(!tx.isValid()) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
 }
 
 class Blockchain {
@@ -47,23 +87,33 @@ class Blockchain {
       return this.chain[this.chain.length - 1];
     }
     
-    minePendingTransaction(minerRewardAdress){
+    minePendingTransactions(minerRewardAddress){
       // Mine all pending transactions and add them to a new block
       let block = new Block(Date.now(), this.pendingTransactions);
       block.mineBlock(this.difficulty);
 
       this.chain.push(block);
 
+      // reset pending transactions and give block reward to miner in next block
+      // Important to delay block rewards for security reasons
       this.pendingTransactions = [
-        new Transaction(null, minerRewardAdress, this.miningReward)
+        new Transaction(null, minerRewardAddress, this.miningReward)
       ];
     }
 
-    createTransaction(transaction){
+    addTransaction(transaction){
+      if (!transaction.fromAddress || !transaction.toAddress){
+        throw new Error("Transaction must have a to- and from address")
+      }
+
+      if (!transaction.isValid()){
+        throw new Error("Transaction not valid")
+      }
+
       this.pendingTransactions.push(transaction);
     }
   
-    getBalanceOfAdress(address){
+    getBalanceOfAddress(address){
       let balance = 0.
       for (const block of this.chain){
         for (const trans of block.transactions){
@@ -100,6 +150,10 @@ class Blockchain {
         }
         if (currentBlock.hash !== currentBlock.calculateHash()) {
           return false;
+
+        if (!currentBlock.hasValidTransaction()) {
+          return false;
+        }
         }
       }
   
@@ -108,4 +162,5 @@ class Blockchain {
   }
 
 module.exports.Transaction = Transaction
+module.exports.Block = Block
 module.exports.Blockchain = Blockchain
