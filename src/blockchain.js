@@ -3,17 +3,21 @@ const EC = require("elliptic").ec;
 const ec = new EC("secp256k1");
 
 class Transaction {
+  // Handles logic of each transaction
   constructor(fromAddress, toAddress, amount) {
     this.fromAddress = fromAddress
     this.toAddress = toAddress
     this.amount = amount
+    this.timestamp = Date.now()
   }
 
   calculateHash(){
-    return SHA256(this.toAddress, this.fromAddress, this.amount).toString();
+    return SHA256(this.toAddress, this.fromAddress, this.amount + this.timestamp).toString();
   }
 
+
   signTransaction(signingKey){
+    // Signs a transaction using a signingKey, which is an Elliptic keypair containing private key
     if (signingKey.getPublic('hex') !== this.fromAddress){
       throw new Error("Your signing key does not match your wallet");
     }
@@ -26,12 +30,15 @@ class Transaction {
   }
 
   isValid(){
+    // Check if transaction is valid
+    // TODO change null address to a special "treasury" address
     if (this.fromAddress === null) return true
 
     if (!this.signature || this.signature.length === 0){
       throw new Error("No signature")
     }
 
+    // Check that transaction is signed and that signature matches publicKey
     const publicKey = ec.keyFromPublic(this.fromAddress, 'hex');
     return publicKey.verify(this.calculateHash(), this.signature);
   }
@@ -39,6 +46,7 @@ class Transaction {
 }
 
 class Block {
+    // Contains all logic concerning a single block
     constructor(timestamp, transactions, previousHash = '') {
       this.previousHash = previousHash;
       this.timestamp = timestamp;
@@ -53,7 +61,7 @@ class Block {
 
     mineBlock(difficulty) {
       while (this.hash.substring(0, difficulty) !== Array(difficulty+1).join("0")){
-        this.nonce++;
+        this.nonce++; // increment nonce to ensure that the hash is different for every loop
         this.hash = this.calculateHash()
       }
 
@@ -61,6 +69,7 @@ class Block {
     }
 
     hasValidTransaction(){
+      // check all transactions are valid
       for (const tx of this.transactions){
         if(!tx.isValid()) {
           return false;
@@ -72,10 +81,11 @@ class Block {
 }
 
 class Blockchain {
+    // Contain all logic at the chain level
     constructor() {
       this.chain = [this.createGenesisBlock()];
-      this.difficulty = 2;
-      this.pendingTransactions = [];
+      this.difficulty = 2;  // controls time it takes to mine a block
+      this.pendingTransactions = [];  // transactions to be mined into next block
       this.miningReward = 100;
     }
   
@@ -110,24 +120,46 @@ class Blockchain {
         throw new Error("Transaction not valid")
       }
 
+      if (transaction.amount <= 0){
+        throw new Error("Transaction amounts must be larger than zero.")
+      }
+
+      if (this.getBalanceOfAddress(transaction.fromAddress) < transaction.amount){
+        throw new Error("Balance too low")
+      }
+
       this.pendingTransactions.push(transaction);
     }
   
     getBalanceOfAddress(address){
-      let balance = 0.
+      let balance = 0.;
+
       for (const block of this.chain){
         for (const trans of block.transactions){
-          if (trans.fromAdress === address){
-            balance -= trans.amount
+          if (trans.fromAddress === address){
+            balance -= trans.amount;
           }
         
-          if (trans.toAdress === address){
+          if (trans.toAddress === address){
             balance += trans.amount
           }
         }
       }
 
-      return "Balance of "+address + " is " + balance
+      return "Balance of "+address + " \nResult: " + balance
+    }
+
+    getAllTransactionsForWallet(address){
+      // Get all transactions for a given wallet
+      const txs = []
+
+      for (const block of this.chain){
+        for (const tx of block.transactions){
+          if (tx.fromAddress == address || tx.toAddress == address){
+            txs.push(tx)
+          }
+        }
+      }
     }
 
     isChainValid(){
@@ -139,7 +171,7 @@ class Blockchain {
         return false;
       }
   
-      // Check the remaining blocks on the chain to see if there hashes and
+      // Check the remaining blocks on the chain to see if their hashes and
       // signatures are correct
       for (let i = 1; i < this.chain.length; i++) {
         const currentBlock = this.chain[i];
@@ -148,19 +180,19 @@ class Blockchain {
         if (previousBlock.hash !== currentBlock.previousHash) {
           return false;
         }
+
         if (currentBlock.hash !== currentBlock.calculateHash()) {
           return false;
+        }
 
         if (!currentBlock.hasValidTransaction()) {
           return false;
-        }
         }
       }
   
       return true;
     }
   }
-
 module.exports.Transaction = Transaction
 module.exports.Block = Block
 module.exports.Blockchain = Blockchain
