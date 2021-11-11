@@ -13,11 +13,14 @@ const myCoin = new Blockchain();
 
 // Mine first block
 myCoin.minePendingTransactions(myWalletAddress);
+myCoin.minePendingTransactions(myWalletAddress);
 
 // Create a transaction & sign it with your key
 const tx1 = new Transaction(myWalletAddress, 'address2', 100);
 tx1.signTransaction(myKey);
 myCoin.addTransaction(tx1);
+
+myCoin.getBalanceOfAddress(myWalletAddress)
 
 // Mine block
 myCoin.minePendingTransactions(myWalletAddress);

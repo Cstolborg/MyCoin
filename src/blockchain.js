@@ -15,7 +15,6 @@ class Transaction {
     return SHA256(this.toAddress, this.fromAddress, this.amount + this.timestamp).toString();
   }
 
-
   signTransaction(signingKey){
     // Signs a transaction using a signingKey, which is an Elliptic keypair containing private key
     if (signingKey.getPublic('hex') !== this.fromAddress){
