@@ -1,6 +1,34 @@
 {
+  "name": "mycoin",
+  "version": "1.0.0",
+  "description": "This is a project for creating a minimal working blockchain/cryptocurrency",
+  "main": "index.js",
   "dependencies": {
+    "hash.js": "^1.1.7",
+    "brorand": "^1.1.0",
     "crypto-js": "^4.1.1",
+    "bn.js": "^4.12.0",
+    "hmac-drbg": "^1.0.1",
+    "minimalistic-crypto-utils": "^1.0.1",
+    "inherits": "^2.0.4",
+    "minimalistic-assert": "^1.0.1",
     "elliptic": "^6.5.4"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cstolborg/MyCoin.git"
+  },
+  "keywords": [
+    "blockchain"
+  ],
+  "author": "Cstolborg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Cstolborg/MyCoin/issues"
+  },
+  "homepage": "https://github.com/Cstolborg/MyCoin#readme"
 }
