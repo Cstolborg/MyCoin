@@ -1,83 +1,11 @@
 const SHA256 = require('crypto-js/sha256')
+const {Transaction} = require("./transaction");
+const {Block} = require("./block")
 const EC = require("elliptic").ec;
 const ec = new EC("secp256k1");
 
-class Transaction {
-  // Handles logic of each transaction
-  constructor(fromAddress, toAddress, amount) {
-    this.fromAddress = fromAddress
-    this.toAddress = toAddress
-    this.amount = amount
-    this.timestamp = Date.now()
-  }
 
-  calculateHash(){
-    return SHA256(this.toAddress, this.fromAddress, this.amount + this.timestamp).toString();
-  }
 
-  signTransaction(signingKey){
-    // Signs a transaction using a signingKey, which is an Elliptic keypair containing private key
-    if (signingKey.getPublic('hex') !== this.fromAddress){
-      throw new Error("Your signing key does not match your wallet");
-    }
-
-    // Calculate hash of transaction and sign it with key
-    const hashTx = this.calculateHash();
-    const sig = signingKey.sign(hashTx, "base64");
-
-    this.signature = sig.toDER('hex');
-  }
-
-  isValid(){
-    // Check if transaction is valid
-    // TODO change null address to a special "treasury" address
-    if (this.fromAddress === null) return true
-
-    if (!this.signature || this.signature.length === 0){
-      throw new Error("No signature")
-    }
-
-    // Check that transaction is signed and that signature matches publicKey
-    const publicKey = ec.keyFromPublic(this.fromAddress, 'hex');
-    return publicKey.verify(this.calculateHash(), this.signature);
-  }
-
-}
-
-class Block {
-    // Contains all logic concerning a single block
-    constructor(timestamp, transactions, previousHash = '') {
-      this.previousHash = previousHash;
-      this.timestamp = timestamp;
-      this.transactions = transactions;
-      this.nonce = 0;
-      this.hash = this.calculateHash();
-    }
-  
-    calculateHash() {
-      return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString();
-    }
-
-    mineBlock(difficulty) {
-      while (this.hash.substring(0, difficulty) !== Array(difficulty+1).join("0")){
-        this.nonce++; // increment nonce to ensure that the hash is different for every loop
-        this.hash = this.calculateHash()
-      }
-
-      console.log("Block mined: " + this.hash)
-    }
-
-    hasValidTransaction(){
-      // check all transactions are valid
-      for (const tx of this.transactions){
-        if(!tx.isValid()) {
-          return false;
-        }
-      }
-      
-      return true;
-    }
-}
 
 class Blockchain {
     // Contain all logic at the chain level
@@ -177,21 +105,30 @@ class Blockchain {
         const previousBlock = this.chain[i - 1];
   
         if (previousBlock.hash !== currentBlock.previousHash) {
+          console.log('Invalid previous hash')
           return false;
         }
 
         if (currentBlock.hash !== currentBlock.calculateHash()) {
+          console.log('Invalid hash')
           return false;
         }
 
         if (!currentBlock.hasValidTransaction()) {
+          console.log('Invalid transactions in new Block')
           return false;
+        }
+
+        if (!currentBlock.isValidBlockStructure()){
+          console.log('Invalid block structure')
+          return false
         }
       }
   
       return true;
     }
+    // Need some logic on choosing the longest chain if two conflicting
+
   }
-module.exports.Transaction = Transaction
-module.exports.Block = Block
+
 module.exports.Blockchain = Blockchain
