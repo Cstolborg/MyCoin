@@ -26,8 +26,8 @@ class Blockchain {
     
     minePendingTransactions(minerRewardAddress){
       // Mine all pending transactions and add them to a new block
-      let block = new Block(Date.now(), this.pendingTransactions);
-      block.mineBlock(this.difficulty);
+      let block = new Block(Date.now(), this.pendingTransactions, this.getLatestBlock().hash);
+      block.mineBlock(this.difficulty, 100.); // TODO FIX BALANCE!!!
 
       this.chain.push(block);
 
@@ -35,7 +35,7 @@ class Blockchain {
       // Important to delay block rewards for security reasons
       this.pendingTransactions = [
         new Transaction(null, minerRewardAddress, this.miningReward)
-      ];
+      ]; 
     }
 
     addTransaction(transaction){

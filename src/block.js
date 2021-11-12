@@ -1,3 +1,4 @@
+const CryptoJS = require('crypto-js')
 const SHA256 = require('crypto-js/sha256')
 const {Transaction} = require("./transaction");
 const EC = require("elliptic").ec;
@@ -12,18 +13,22 @@ class Block {
       this.previousHash = previousHash;
       this.timestamp = timestamp;
       this.transactions = transactions;
-      this.nonce = 0;
+      this.nonce = 0;  // Irrelevant under PoS?
       this.hash = this.calculateHash();
     }
   
     calculateHash() {
-      return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString();
+			let hash = SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString();
+      hash = (parseInt(hash, 16).toString(2)).padStart(8, '0')  // see https://stackoverflow.com/questions/45053624/convert-hex-to-binary-in-javascript
+			return hash
     }
-
-    mineBlock(difficulty) {
-      while (this.hash.substring(0, difficulty) !== Array(difficulty+1).join("0")){
+    mineBlock(difficulty, balance) {
+			const balanceOverDiff = 2n**256n * BigInt(balance) / BigInt(difficulty)
+      while (this.hash >= balanceOverDiff){
         this.nonce++; // increment nonce to ensure that the hash is different for every loop
         this.hash = this.calculateHash()
+
+
       }
 
       console.log("Block mined: " + this.hash)
