@@ -16,6 +16,7 @@ const myCoin = new Blockchain();
 myCoin.minePendingTransactions(myWalletAddress);
 myCoin.minePendingTransactions(myWalletAddress);
 
+
 // Create a transaction & sign it with your key
 const tx1 = new Transaction(myWalletAddress, 'address2', 100);
 tx1.signTransaction(myKey);
@@ -35,10 +36,13 @@ myCoin.addTransaction(tx2);
 myCoin.minePendingTransactions(myWalletAddress);
 
 console.log();
-console.log(`Balance is ${myCoin.getBalanceOfAddress(myWalletAddress)}`);
+console.log(myCoin.getBalanceOfAddress(myWalletAddress));
 
 console.log('Blockchain valid?', myCoin.isChainValid() ? 'Yes' : 'No');
+
+
 console.log(JSON.stringify(myCoin.chain, null, 4))
+
 
 myCoin.chain[2].transactions[0].amount = 10; // Trying to tamper with the chain
 

@@ -11,7 +11,7 @@ class Blockchain {
     // Contain all logic at the chain level
     constructor() {
       this.chain = [this.createGenesisBlock()];
-      this.difficulty = 2;  // controls time it takes to mine a block
+      this.difficulty = 10000;  // controls time it takes to mine a block
       this.pendingTransactions = [];  // transactions to be mined into next block
       this.miningReward = 100;
     }
@@ -73,7 +73,7 @@ class Blockchain {
         }
       }
 
-      return "Balance of "+address + " \nResult: " + balance
+      return "Amount of " +balance+ " Owned by " +address
     }
 
     getAllTransactionsForWallet(address){
@@ -95,6 +95,7 @@ class Blockchain {
       const realGenesis = JSON.stringify(this.createGenesisBlock());
   
       if (realGenesis !== JSON.stringify(this.chain[0])) {
+        console.log("Invalid genesis block");
         return false;
       }
   
@@ -103,6 +104,7 @@ class Blockchain {
       for (let i = 1; i < this.chain.length; i++) {
         const currentBlock = this.chain[i];
         const previousBlock = this.chain[i - 1];
+        const currentBlockTimestamp = currentBlock.timestamp
   
         if (previousBlock.hash !== currentBlock.previousHash) {
           console.log('Invalid previous hash')
@@ -110,6 +112,7 @@ class Blockchain {
         }
 
         if (currentBlock.hash !== currentBlock.calculateHash()) {
+          console.log(currentBlock)
           console.log('Invalid hash')
           return false;
         }

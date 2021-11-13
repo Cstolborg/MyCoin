@@ -1,9 +1,9 @@
-const CryptoJS = require('crypto-js')
-const SHA256 = require('crypto-js/sha256')
+const CryptoJS = require('crypto-js');
+const SHA256 = require('crypto-js/sha256');
 const {Transaction} = require("./transaction");
 const EC = require("elliptic").ec;
 const ec = new EC("secp256k1");
-
+const BigNumber = require('bignumber.js');
 
 
 
@@ -13,25 +13,32 @@ class Block {
       this.previousHash = previousHash;
       this.timestamp = timestamp;
       this.transactions = transactions;
-      this.nonce = 0;  // Irrelevant under PoS?
-      this.hash = this.calculateHash();
+      this.hash = this.calculateHash(this.timestamp);
     }
   
-    calculateHash() {
-			let hash = SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString();
-      hash = (parseInt(hash, 16).toString(2)).padStart(8, '0')  // see https://stackoverflow.com/questions/45053624/convert-hex-to-binary-in-javascript
+    calculateHash(timestamp=null) {
+			if (timestamp == null) timestamp = this.timestamp
+			let hash = SHA256(this.previousHash + timestamp + JSON.stringify(this.transactions)).toString();
 			return hash
     }
+		
     mineBlock(difficulty, balance) {
-			const balanceOverDiff = 2n**256n * BigInt(balance) / BigInt(difficulty)
-      while (this.hash >= balanceOverDiff){
-        this.nonce++; // increment nonce to ensure that the hash is different for every loop
-        this.hash = this.calculateHash()
+			// Mine a new block using a PoS method
+			// At every timestamp, evaluate if hash is bigger than BalanceOverDiff
+      const balanceOverDiff = new BigNumber(2).exponentiatedBy(256).times(balance).dividedBy(difficulty);
+			let now = 0.
 
-
+			while (true){
+				now = Date.now()
+        this.hash = this.calculateHash(now)
+			  let decimalStakingHash = new BigNumber(this.hash, 16);
+				
+				if (balanceOverDiff.minus(decimalStakingHash).toNumber() >= 0){
+					break
+				}
       }
-
-      console.log("Block mined: " + this.hash)
+			this.timestamp = now
+			console.log("Block mined: " + this.hash);
     }
 
     hasValidTransaction(){
@@ -48,8 +55,14 @@ class Block {
     isValidBlockStructure(){
       return typeof block.previousHash === 'string' &&
              typeof block.hash === 'string' &&
-             typeof block.timestamp === 'string'  
+             typeof block.timestamp === 'number' 
     }
 }
 
 module.exports.Block = Block
+
+
+let block = new Block(Date.now(), [], " ")
+block.mineBlock(100000., 100.)
+
+//block.mineBlock(1, balance=1000)
