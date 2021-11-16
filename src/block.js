@@ -60,9 +60,3 @@ class Block {
 }
 
 module.exports.Block = Block
-
-
-let block = new Block(Date.now(), [], " ")
-block.mineBlock(100000., 100.)
-
-//block.mineBlock(1, balance=1000)
